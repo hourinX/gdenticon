@@ -9,3 +9,5 @@ package asset
 // temp directory, so that generated icons always occupy a directory of their
 // own instead of landing loose among whatever else the base holds.
 const FolderName = "gdenticon"
+
+var Version = "0.1.0-dev" // program version: reported by the --version flag
