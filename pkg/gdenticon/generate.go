@@ -4,16 +4,14 @@
 package gdenticon
 
 import (
-	"fmt"
-
 	"github.com/hourinX/gdenticon/pkg/gdenticon/model"
 )
 
 // Generate derives the icon for id from img. The same id and img always produce
 // the same Icon.
 func Generate(id string, img model.Image) (model.Icon, error) {
-	if img.GridSize < 1 {
-		return model.Icon{}, fmt.Errorf("grid size must be positive, got %d", img.GridSize)
+	if err := validateGrid(img); err != nil {
+		return model.Icon{}, err
 	}
 
 	hash := img.Hash
@@ -34,8 +32,22 @@ func Generate(id string, img model.Image) (model.Icon, error) {
 
 	return model.Icon{
 		GridSize:   img.GridSize,
-		Filled:     grid(newEntropy(digest), img.GridSize, img.Mirror),
+		Filled:     fill(digest, img),
 		Background: background,
 		Foreground: foreground(digest),
 	}, nil
+}
+
+// fill draws the cell grid for img from digest, by whichever style img asks for.
+func fill(digest []byte, img model.Image) []bool {
+	style := img.Style
+	if style == model.PatternDefault {
+		style = model.DefaultStyle
+	}
+
+	e := newEntropy(digest)
+	if style == model.PatternBalanced {
+		return balancedGrid(e, img.GridSize, img.Mirror)
+	}
+	return grid(e, img.GridSize, img.Mirror)
 }

@@ -4,7 +4,6 @@
 package gdenticon
 
 import (
-	"fmt"
 	"image"
 	"image/draw"
 	"image/png"
@@ -15,8 +14,8 @@ import (
 
 // WritePNG writes the PNG icon for id to w.
 func WritePNG(w io.Writer, id string, img model.Image) error {
-	if img.ImageSize < 1 {
-		return fmt.Errorf("image size must be positive, got %d", img.ImageSize)
+	if err := validate(img); err != nil {
+		return err
 	}
 
 	icon, err := Generate(id, img)
@@ -49,15 +48,18 @@ func cell(size, gridSize, col, row int) image.Rectangle {
 	)
 }
 
-// edge returns the pixel coordinate of grid line i. The grid is inset by half a
-// cell so that it floats in the image rather than touching its edges, and lines
-// past the middle are derived from their opposite by subtraction rather than by
-// dividing again, so that a cell and the cell it mirrors onto occupy matching
-// pixel ranges even when size is not a multiple of gridSize.
+// edge returns the pixel coordinate of grid line i. The cell size is rounded
+// rather than truncated, because truncating throws away up to a whole cell: at
+// 16 pixels that leaves the pattern filling barely half the image. Lines past
+// the middle are derived from their opposite by subtraction rather than by
+// dividing again, so a cell and the cell it mirrors onto cover matching pixels.
 func edge(size, gridSize, i int) int {
 	if i > gridSize/2 {
 		return size - edge(size, gridSize, gridSize-i)
 	}
-	cell := size / (gridSize + 1)
+	cell := (2*size + gridSize + 1) / (2 * (gridSize + 1))
+	if room := size / gridSize; cell > room {
+		cell = room
+	}
 	return (size-gridSize*cell)/2 + i*cell
 }
