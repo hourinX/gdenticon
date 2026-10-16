@@ -10,4 +10,4 @@ package asset
 // own instead of landing loose among whatever else the base holds.
 const FolderName = "gdenticon"
 
-var Version = "0.1.0-dev" // program version: reported by the --version flag
+var Version = "1.0.0" // program version: reported by the --version flag
