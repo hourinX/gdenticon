@@ -20,8 +20,7 @@ func balancedGrid(e *entropy, size int, mirror bool) []bool {
 	return balancedGridWithin(e, size, mirror, maxAttempts)
 }
 
-// balancedGridWithin is balancedGrid with an explicit attempt budget, so a test
-// can drive the fallback that production reaches once in 1e14 ids.
+// balancedGridWithin draws within an explicit attempt budget.
 func balancedGridWithin(e *entropy, size int, mirror bool, attempts int) []bool {
 	var best []bool
 	bestPenalty := 0
@@ -57,9 +56,7 @@ func degenerate(cells []bool, size int) bool {
 	return blocks >= minFragmentedBlocks && blocks*2 > filled
 }
 
-// visualPenalty scores how far cells falls outside the accepted band, in
-// thousandths: zero is inside it. Both terms are on the same scale, so neither
-// wins by unit choice alone.
+// visualPenalty scores distance outside the accepted band in thousandths.
 func visualPenalty(cells []bool, size int) int {
 	filled := filledCells(cells)
 	if filled == 0 || filled == len(cells) {

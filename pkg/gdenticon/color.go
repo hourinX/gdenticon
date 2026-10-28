@@ -8,8 +8,6 @@ import (
 	"image/color"
 	"strconv"
 	"strings"
-
-	"github.com/hourinX/gdenticon/pkg/gdenticon/model"
 )
 
 func ParseColor(s string) (color.Color, error) {
@@ -42,6 +40,6 @@ func HexOf(c color.Color) string {
 }
 
 // FixedColor returns a ColorFunc that ignores the hash and always returns c.
-func FixedColor(c color.Color) model.ColorFunc {
+func FixedColor(c color.Color) ColorFunc {
 	return func([]byte) color.Color { return c }
 }

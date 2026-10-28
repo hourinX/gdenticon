@@ -3,46 +3,57 @@
 
 package gdenticon
 
-import (
-	"fmt"
+import "fmt"
 
-	"github.com/hourinX/gdenticon/pkg/gdenticon/model"
-)
-
-// validateGrid checks the constraints on the grid an Image asks for. Any entry
-// point that draws from an Image needs them, whatever it renders to.
-func validateGrid(img model.Image) error {
-	if img.GridSize < 1 {
-		return fmt.Errorf("grid size must be positive, got %d", img.GridSize)
+// validateGrid checks the constraints on a logical icon grid.
+func validateGrid(size int) error {
+	if size < 1 {
+		return fmt.Errorf("grid size must be positive, got %d", size)
 	}
-	if img.GridSize > model.MaxGridSize {
-		return fmt.Errorf("grid size must be at most %d, got %d", model.MaxGridSize, img.GridSize)
+	if size > MaxGridSize {
+		return fmt.Errorf("grid size must be at most %d, got %d", MaxGridSize, size)
 	}
 	return nil
 }
 
-// validateImage checks the constraints that only rasterising imposes, which is
-// why Generate does not apply them: they say nothing about a vector icon, and
-// everything about a grid whose cells have to land on whole pixels.
-func validateImage(img model.Image) error {
-	if img.ImageSize < 1 {
-		return fmt.Errorf("image size must be positive, got %d", img.ImageSize)
-	}
-	if img.ImageSize > model.MaxImageSize {
-		return fmt.Errorf("image size must be at most %d, got %d", model.MaxImageSize, img.ImageSize)
-	}
-	if img.ImageSize < img.GridSize {
-		return fmt.Errorf("image size must be at least the grid size %d, got %d", img.GridSize, img.ImageSize)
-	}
-	return nil
-}
-
-// validate checks everything an Image must satisfy to be drawn on pixels. It
-// takes the grid first, so an image that fails both is reported for the reason
-// that is actually the caller's mistake rather than the consequence of it.
-func validate(img model.Image) error {
-	if err := validateGrid(img); err != nil {
+// validateRaster checks the constraints shared by raster encoders.
+func validateRaster(icon Icon, size int, format Format) error {
+	if err := validateIcon(icon); err != nil {
 		return err
 	}
-	return validateImage(img)
+	if size < 1 {
+		return fmt.Errorf("%s size must be positive, got %d", format, size)
+	}
+	if size > MaxImageSize {
+		return fmt.Errorf("%s size must be at most %d, got %d", format, MaxImageSize, size)
+	}
+	if size < icon.GridSize {
+		return fmt.Errorf("%s size must be at least the grid size %d, got %d", format, icon.GridSize, size)
+	}
+	return nil
+}
+
+// validateSVG checks the constraints imposed by writing an icon as SVG.
+func validateSVG(icon Icon, size int) error {
+	if err := validateIcon(icon); err != nil {
+		return err
+	}
+	if size < 1 {
+		return fmt.Errorf("SVG size must be positive, got %d", size)
+	}
+	return nil
+}
+
+// validateIcon checks the invariants expected by every encoder.
+func validateIcon(icon Icon) error {
+	if err := validateGrid(icon.GridSize); err != nil {
+		return err
+	}
+	if len(icon.Filled) != icon.GridSize*icon.GridSize {
+		return fmt.Errorf("icon has %d cells, want %d", len(icon.Filled), icon.GridSize*icon.GridSize)
+	}
+	if icon.Background == nil || icon.Foreground == nil {
+		return fmt.Errorf("icon colours must not be nil")
+	}
+	return nil
 }

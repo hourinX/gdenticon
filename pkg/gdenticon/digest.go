@@ -50,7 +50,7 @@ func SHA3_384(id string) []byte { return sum(sha3.New384(), id) }
 // SHA3_512 returns the SHA3-512 digest of id.
 func SHA3_512(id string) []byte { return sum(sha3.New512(), id) }
 
-var digests = map[string]func(string) []byte{
+var digests = map[string]DigestFunc{
 	DefaultDigest: MD5,
 	"sha1":        SHA1,
 	"sha224":      SHA224,
@@ -66,7 +66,7 @@ var digests = map[string]func(string) []byte{
 }
 
 // Digest returns the digest function registered under name.
-func Digest(name string) (func(string) []byte, bool) {
+func Digest(name string) (DigestFunc, bool) {
 	fn, ok := digests[name]
 	return fn, ok
 }

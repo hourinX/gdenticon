@@ -3,51 +3,67 @@
 
 package gdenticon
 
-import (
-	"github.com/hourinX/gdenticon/pkg/gdenticon/model"
-)
+import "fmt"
 
-// Generate derives the icon for id from img. The same id and img always produce
-// the same Icon.
-func Generate(id string, img model.Image) (model.Icon, error) {
-	if err := validateGrid(img); err != nil {
-		return model.Icon{}, err
+// Generate derives an icon from id and opts, resolving the default format when
+// none is selected. The same id and options always produce the same Icon.
+func Generate(id string, opts GenerateOptions) (Icon, error) {
+	if err := validateGrid(opts.GridSize); err != nil {
+		return Icon{}, err
 	}
 
-	hash := img.Hash
-	if hash == nil {
-		hash = MD5
+	digestFunc := opts.Digest
+	if digestFunc == nil {
+		digestFunc = MD5
 	}
-	digest := hash(id)
+	digest := digestFunc(id)
 
-	background := img.Background
+	background := opts.Background
 	if background == nil {
-		background = model.DefaultBackground
+		background = DefaultBackground
 	}
 
-	foreground := img.Foreground
+	foreground := opts.Foreground
 	if foreground == nil {
 		foreground = HueColor
 	}
+	format := opts.Format
+	if format == FormatDefault {
+		format = DefaultFormat
+	}
+	if !supportedFormat(format) {
+		return Icon{}, fmt.Errorf("unsupported image format %q", format)
+	}
 
-	return model.Icon{
-		GridSize:   img.GridSize,
-		Filled:     fill(digest, img),
+	return Icon{
+		GridSize:   opts.GridSize,
+		Filled:     fill(digest, opts),
 		Background: background,
 		Foreground: foreground(digest),
+		Format:     format,
 	}, nil
 }
 
-// fill draws the cell grid for img from digest, by whichever style img asks for.
-func fill(digest []byte, img model.Image) []bool {
-	style := img.Style
-	if style == model.PatternDefault {
-		style = model.DefaultStyle
+// supportedFormat reports whether Write has an encoder for format.
+func supportedFormat(format Format) bool {
+	switch format {
+	case FormatPNG, FormatSVG, FormatJPEG, FormatGIF, FormatBMP, FormatTIFF:
+		return true
+	default:
+		return false
+	}
+}
+
+// fill draws the cell grid for opts from digest, using the requested style.
+func fill(digest []byte, opts GenerateOptions) []bool {
+	style := opts.Style
+	if style == PatternDefault {
+		style = DefaultStyle
 	}
 
 	e := newEntropy(digest)
-	if style == model.PatternBalanced {
-		return balancedGrid(e, img.GridSize, img.Mirror)
+	if style == PatternBalanced {
+		return balancedGrid(e, opts.GridSize, opts.Mirror)
 	}
-	return grid(e, img.GridSize, img.Mirror)
+	return grid(e, opts.GridSize, opts.Mirror)
 }

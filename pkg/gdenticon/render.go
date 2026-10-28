@@ -6,27 +6,10 @@ package gdenticon
 import (
 	"image"
 	"image/draw"
-	"image/png"
-	"io"
-
-	"github.com/hourinX/gdenticon/pkg/gdenticon/model"
 )
 
-// WritePNG writes the PNG icon for id to w.
-func WritePNG(w io.Writer, id string, img model.Image) error {
-	if err := validate(img); err != nil {
-		return err
-	}
-
-	icon, err := Generate(id, img)
-	if err != nil {
-		return err
-	}
-	return png.Encode(w, raster(icon, img.ImageSize))
-}
-
 // raster paints icon into a size×size image.
-func raster(icon model.Icon, size int) *image.NRGBA {
+func raster(icon Icon, size int) *image.NRGBA {
 	m := image.NewNRGBA(image.Rect(0, 0, size, size))
 	draw.Draw(m, m.Bounds(), image.NewUniform(icon.Background), image.Point{}, draw.Src)
 

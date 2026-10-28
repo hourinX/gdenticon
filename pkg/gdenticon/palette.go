@@ -8,8 +8,6 @@ import (
 	"encoding/binary"
 	"image/color"
 	"math"
-
-	"github.com/hourinX/gdenticon/pkg/gdenticon/model"
 )
 
 // tagColor domain-separates the colour stream from the one the grid draws on.
@@ -21,15 +19,8 @@ const (
 	maxContrast = 4.5 // foreground: most contrast it may have against the background, as a WCAG ratio
 )
 
-// HueColor returns the colour that digest implies. It is what Generate falls
-// back to when Image.Foreground is nil.
-//
-// Hue and saturation come straight from the digest; the lightness is solved for
-// instead of drawn, so that the contrast against the default background lands
-// inside [minContrast, maxContrast]. Solving for contrast rather than drawing a
-// lightness is what makes the hues equally legible: at one lightness yellow
-// reads far lighter than violet, so a fixed band leaves yellow washed out
-// against white however the band is placed.
+// HueColor derives hue and saturation from digest, then solves lightness so the
+// result remains legible against the default background.
 func HueColor(digest []byte) color.Color {
 	seed := derive(digest, tagColor)
 	hue := float64(binary.BigEndian.Uint16(seed)) / 65536
@@ -38,21 +29,12 @@ func HueColor(digest []byte) color.Color {
 	return luminanceColor(hue, saturation, want)
 }
 
-// luminanceColor returns the colour of the given hue and saturation whose
-// contrast against the default background sits inside the band, as close to
-// want as the colours on that ray allow.
-//
-// Contrast is measured on the quantised colour that hsl returns rather than on
-// the lightness it was built from, so the band describes the bytes that reach
-// the image file. Quantisation turns the contrast into a step function of the
-// lightness, and a step can straddle the ceiling, so reaching the target is not
-// on its own enough to stay under it. The floor needs no such repair:
-// lightnessAt only returns a lightness it measured above the target, and want is
-// never drawn below the floor.
+// luminanceColor finds the quantised colour nearest want while keeping contrast
+// inside the accepted band.
 func luminanceColor(hue, saturation, want float64) color.Color {
 	lightness := lightnessAt(hue, saturation, want, true)
 
-	if contrastOf(colourLuminance(hue, saturation, lightness), luminance(model.DefaultBackground)) > maxContrast {
+	if contrastOf(colourLuminance(hue, saturation, lightness), luminance(DefaultBackground)) > maxContrast {
 		lightness = lightnessAt(hue, saturation, maxContrast, false)
 	}
 	return hsl(hue, saturation, lightness)
@@ -61,7 +43,7 @@ func luminanceColor(hue, saturation, want float64) color.Color {
 // lightnessAt returns the lightness at which the contrast of a ray crosses
 // target: the lightest one still above it, or the darkest one no longer above it.
 func lightnessAt(hue, saturation, target float64, above bool) float64 {
-	background := luminance(model.DefaultBackground)
+	background := luminance(DefaultBackground)
 	lo, hi := 0.0, 1.0 // the contrast at lo is above target, the one at hi is not
 
 	for range 12 {
@@ -78,8 +60,7 @@ func lightnessAt(hue, saturation, target float64, above bool) float64 {
 	return hi
 }
 
-// colourLuminance returns the luminance of a hue, saturation and lightness,
-// read from the same 8-bit channels hsl writes so that the two cannot drift.
+// colourLuminance measures the same quantised channels hsl writes.
 func colourLuminance(hue, saturation, lightness float64) float64 {
 	r, g, b := hslChannels(hue, saturation, lightness)
 	return 0.2126*linearTable[r] + 0.7152*linearTable[g] + 0.0722*linearTable[b]
@@ -93,20 +74,18 @@ func contrastOf(a, b float64) float64 {
 	return (a + 0.05) / (b + 0.05)
 }
 
-// contrastRatio returns the WCAG contrast ratio of two opaque colours: 1 for a
-// pair that cannot be told apart, 21 for black on white.
+// contrastRatio returns the WCAG contrast ratio of two opaque colours.
 func contrastRatio(a, b color.Color) float64 {
 	return contrastOf(luminance(a), luminance(b))
 }
 
-// luminance returns the relative luminance WCAG defines, read from the 8-bit
-// channels so that it describes the colour as it is written out.
+// luminance returns WCAG relative luminance from 8-bit colour channels.
 func luminance(c color.Color) float64 {
 	r, g, b, _ := c.RGBA()
 	return 0.2126*linearTable[r>>8] + 0.7152*linearTable[g>>8] + 0.0722*linearTable[b>>8]
 }
 
-// linearTable holds the sRGB decode of each byte a channel can take, tabulated to keep the solver's bisection off math.Pow.
+// linearTable caches the sRGB decode of every channel byte.
 var linearTable = func() (table [256]float64) {
 	for i := range table {
 		c := float64(i) / 255
@@ -119,8 +98,7 @@ var linearTable = func() (table [256]float64) {
 	return
 }()
 
-// derive returns seed marked as belonging to one purpose, so that two streams
-// taken from the same digest cannot share bits.
+// derive domain-separates a digest for one purpose.
 func derive(seed []byte, tag byte) []byte {
 	h := sha256.New()
 	h.Write(seed)
