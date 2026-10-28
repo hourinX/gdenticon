@@ -1,4 +1,6 @@
 <div align="center">
+  <p><strong>English</strong> · <a href="README.zh-CN.md">简体中文</a></p>
+
   <img src="assets/branding/gdenticon-logo.png" alt="gdenticon" width="900">
 
   <p><strong>Deterministic, configurable identicon generation for Go.</strong></p>
