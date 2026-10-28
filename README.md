@@ -6,7 +6,7 @@
   <p>
     <a href="https://github.com/hourinX/gdenticon/actions/workflows/test.yml"><img src="https://github.com/hourinX/gdenticon/actions/workflows/test.yml/badge.svg" alt="Unit tests"></a>
     <a href="https://codecov.io/gh/hourinX/gdenticon"><img src="https://codecov.io/gh/hourinX/gdenticon/graph/badge.svg" alt="Coverage"></a>
-    <a href="https://pkg.go.dev/github.com/hourinX/gdenticon/pkg/gdenticon"><img src="https://pkg.go.dev/badge/github.com/hourinX/gdenticon/pkg/gdenticon.svg" alt="Go Reference"></a>
+    <a href="https://pkg.go.dev/github.com/hourinX/gdenticon/v2/pkg/gdenticon"><img src="https://pkg.go.dev/badge/github.com/hourinX/gdenticon/v2/pkg/gdenticon.svg" alt="Go Reference"></a>
     <a href="https://github.com/hourinX/gdenticon/releases"><img src="https://img.shields.io/github/v/release/hourinX/gdenticon" alt="Release"></a>
     <a href="LICENSE"><img src="https://img.shields.io/github/license/hourinX/gdenticon" alt="License"></a>
   </p>
@@ -26,18 +26,33 @@ sizes, and PNG, SVG, JPEG, GIF, BMP, and TIFF output.
 Install the command-line program:
 
 ```sh
-go install github.com/hourinX/gdenticon/cmd/gdenticon@latest
+go install github.com/hourinX/gdenticon/v2/cmd/gdenticon@latest
 ```
 
 Add the library to a Go module:
 
 ```sh
-go get github.com/hourinX/gdenticon@latest
+go get github.com/hourinX/gdenticon/v2@latest
 ```
+
+Prebuilt executables are available from
+[GitHub Releases](https://github.com/hourinX/gdenticon/releases).
 
 gdenticon requires Go 1.26 or later. Command-line options are documented by
 `gdenticon --help`; the public Go API is available on
-[pkg.go.dev](https://pkg.go.dev/github.com/hourinX/gdenticon/pkg/gdenticon).
+[pkg.go.dev](https://pkg.go.dev/github.com/hourinX/gdenticon/v2/pkg/gdenticon).
+
+## Command line
+
+Pass an identifier directly for regular command-line use:
+
+```sh
+gdenticon alice@example.com --format png --size 512
+```
+
+Run `gdenticon` without arguments, or use `gdenticon shell`, to enter the
+interactive command mode. Inside it, use `generate <id> [flags]`; enter `help`
+to list commands and `exit` to leave.
 
 When no output directory is specified, the command stores generated files in
 the `gdenticon` directory below Go's operating-system temporary directory. This
