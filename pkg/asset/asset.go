@@ -6,4 +6,4 @@ package asset
 // FolderName names the generated-image directory below the selected base.
 const FolderName = "gdenticon"
 
-var Version = "1.0.0" // program version: reported by the --version flag
+var Version = "2.0.0" // program version: reported by the --version flag

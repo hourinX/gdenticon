@@ -9,16 +9,23 @@ import (
 	"io"
 	"os"
 
-	"github.com/hourinX/gdenticon/pkg/asset"
+	"github.com/hourinX/gdenticon/v2/pkg/asset"
 	"github.com/spf13/cobra"
 )
 
 func main() {
-	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
+	os.Exit(runProgram(os.Args[1:], os.Stdin, os.Stdout, os.Stderr))
 }
 
 func run(args []string, stdout, stderr io.Writer) int {
 	return execute(createCommandTree(), args, stdout, stderr)
+}
+
+func runProgram(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	if interactiveRequested(args) {
+		return runInteractive(stdin, stdout, stderr)
+	}
+	return run(args, stdout, stderr)
 }
 
 func createCommandTree() *cobra.Command {

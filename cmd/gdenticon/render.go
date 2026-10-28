@@ -9,9 +9,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/hourinX/gdenticon/pkg/asset"
-	"github.com/hourinX/gdenticon/pkg/gdenticon"
-	iconfile "github.com/hourinX/gdenticon/pkg/gdenticon/file"
+	"github.com/hourinX/gdenticon/v2/pkg/asset"
+	"github.com/hourinX/gdenticon/v2/pkg/gdenticon"
+	iconfile "github.com/hourinX/gdenticon/v2/pkg/gdenticon/file"
 	"github.com/spf13/cobra"
 )
 

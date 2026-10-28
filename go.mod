@@ -1,4 +1,4 @@
-module github.com/hourinX/gdenticon
+module github.com/hourinX/gdenticon/v2
 
 go 1.26.0
 

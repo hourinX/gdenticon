@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/hourinX/gdenticon/pkg/asset"
+	"github.com/hourinX/gdenticon/v2/pkg/asset"
 )
 
 func TestGeneratePNGFiles(t *testing.T) {
