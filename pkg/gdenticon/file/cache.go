@@ -78,7 +78,11 @@ func PutCacheEntry(dir, extension string, perm fs.FileMode, write WriteFunc) (Ca
 // moveNew installs source without replacing an existing target. Copying is a
 // fallback for filesystems that do not support hard links.
 func moveNew(source, target string, perm fs.FileMode) error {
-	if err := os.Link(source, target); err == nil {
+	return moveNewWithLink(source, target, perm, os.Link)
+}
+
+func moveNewWithLink(source, target string, perm fs.FileMode, link func(string, string) error) error {
+	if err := link(source, target); err == nil {
 		if err := os.Remove(source); err != nil {
 			_ = os.Remove(target)
 			return err

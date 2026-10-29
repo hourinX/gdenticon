@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 )
@@ -55,12 +56,39 @@ func TestWriteFailuresCleanUp(t *testing.T) {
 	if _, err := CreateTemp(dir, "failed-*", 0o600, fail); err == nil {
 		t.Fatal("CreateTemp returned nil")
 	}
+	replacePath := filepath.Join(dir, "replace-failed")
+	if err := Replace(replacePath, 0o600, fail); err == nil {
+		t.Fatal("Replace returned nil")
+	}
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(entries) != 1 || entries[0].Name() != filepath.Base(path) {
 		t.Fatalf("CreateTemp left a temporary file: %v", entries)
+	}
+}
+
+func TestWriteRejectsInvalidPaths(t *testing.T) {
+	root := t.TempDir()
+	file := filepath.Join(root, "file")
+	if err := os.WriteFile(file, []byte("content"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	invalidDir := filepath.Join(file, "child")
+	if err := Replace(filepath.Join(invalidDir, "target"), 0o600, writeText("content")); err == nil {
+		t.Fatal("Replace returned nil for invalid directory")
+	}
+	if _, err := CreateTemp(invalidDir, "temp-*", 0o600, writeText("content")); err == nil {
+		t.Fatal("CreateTemp returned nil for invalid directory")
+	}
+
+	targetDir := filepath.Join(root, "target-directory")
+	if err := os.Mkdir(targetDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := Replace(targetDir, 0o600, writeText("content")); err == nil {
+		t.Fatal("Replace replaced a directory")
 	}
 }
 
@@ -117,10 +145,68 @@ func TestPutCacheEntryRejectsInvalidDirectory(t *testing.T) {
 	}
 }
 
+func TestPutCacheEntryRejectsInvalidTargetPath(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "cache")
+	extension := "." + strings.Repeat("x", 4096)
+	if _, err := PutCacheEntry(dir, extension, 0o600, writeText("content")); err == nil {
+		t.Fatal("PutCacheEntry returned nil for an overlong target path")
+	}
+}
+
 func TestMoveNewRejectsMissingSource(t *testing.T) {
 	dir := t.TempDir()
 	if err := moveNew(filepath.Join(dir, "missing"), filepath.Join(dir, "target"), 0o600); err == nil {
 		t.Fatal("moveNew returned nil for missing source")
+	}
+}
+
+func TestMoveNewDoesNotReplaceExistingTarget(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "source")
+	target := filepath.Join(dir, "target")
+	if err := os.WriteFile(source, []byte("new"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(target, []byte("existing"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := moveNew(source, target, 0o600); err == nil {
+		t.Fatal("moveNew replaced an existing target")
+	}
+	got, err := os.ReadFile(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "existing" {
+		t.Fatalf("target contains %q", got)
+	}
+	if _, err := os.Stat(source); err != nil {
+		t.Fatalf("source was removed: %v", err)
+	}
+}
+
+func TestMoveNewCopyFallback(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "source")
+	target := filepath.Join(dir, "target")
+	if err := os.WriteFile(source, []byte("fallback content"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	linkUnavailable := func(string, string) error {
+		return errors.New("hard links unavailable")
+	}
+	if err := moveNewWithLink(source, target, 0o600, linkUnavailable); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "fallback content" {
+		t.Fatalf("target contains %q", got)
+	}
+	if _, err := os.Stat(source); !os.IsNotExist(err) {
+		t.Fatalf("source still exists: %v", err)
 	}
 }
 
