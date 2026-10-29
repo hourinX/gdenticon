@@ -13,26 +13,33 @@ import (
 	"strings"
 )
 
-func (s *interactiveSession) printOutputs(w io.Writer) {
+func (s *interactiveSession) printOutputs(w io.Writer) error {
 	found := false
 	for i, output := range s.outputs {
 		if output.Removed {
 			continue
 		}
 		if !found {
-			fmt.Fprintln(w, "Session outputs:")
+			if _, err := fmt.Fprintln(w, "Session outputs:"); err != nil {
+				return err
+			}
 			found = true
 		}
 		status := "cached"
 		if output.Created {
 			status = "created"
 		}
-		fmt.Fprintf(w, "  [%d] %-7s %s\n", i+1, status, output.Path)
+		if _, err := fmt.Fprintf(w, "  [%d] %-7s %s\n", i+1, status, output.Path); err != nil {
+			return err
+		}
 	}
 	if !found {
-		fmt.Fprintln(w, "No outputs have been generated in this session.")
+		if _, err := fmt.Fprintln(w, "No outputs have been generated in this session."); err != nil {
+			return err
+		}
 	}
-	fmt.Fprintln(w)
+	_, err := fmt.Fprintln(w)
+	return err
 }
 
 func (s *interactiveSession) removableCount() int {

@@ -51,8 +51,8 @@ func createCommandTree(generated func(renderResult)) *cobra.Command {
 			if generated != nil {
 				generated(result)
 			}
-			fmt.Fprintln(cmd.OutOrStdout(), result.Path)
-			return nil
+			_, err = fmt.Fprintln(cmd.OutOrStdout(), result.Path)
+			return err
 		},
 	}
 	cmd.SetVersionTemplate("gdenticon {{.Version}}\n")
@@ -78,11 +78,17 @@ func execute(cmd *cobra.Command, args []string, stdout, stderr io.Writer) int {
 
 	var ue usageError
 	if errors.As(err, &ue) {
-		fmt.Fprintln(stderr, "gdenticon:", err)
-		fmt.Fprint(stderr, cmd.UsageString())
+		if _, writeErr := fmt.Fprintln(stderr, "gdenticon:", err); writeErr != nil {
+			return 1
+		}
+		if _, writeErr := fmt.Fprint(stderr, cmd.UsageString()); writeErr != nil {
+			return 1
+		}
 		return 2
 	}
 
-	fmt.Fprintln(stderr, "gdenticon:", err)
+	if _, writeErr := fmt.Fprintln(stderr, "gdenticon:", err); writeErr != nil {
+		return 1
+	}
 	return 1
 }
