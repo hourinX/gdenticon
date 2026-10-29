@@ -3,7 +3,8 @@
 
   <img src="assets/branding/gdenticon-logo.png" alt="gdenticon" width="900">
 
-  <p><strong>为你的项目生成专属小头像。</strong></p>
+  <h3>从任意字符串生成镜像像素头像。</h3>
+  <p>既是 Go 软件包，也是快速、跨平台的命令行工具。</p>
 
   <p>
     <a href="https://github.com/hourinX/gdenticon/actions/workflows/test.yml"><img src="https://github.com/hourinX/gdenticon/actions/workflows/test.yml/badge.svg" alt="单元测试"></a>
@@ -12,50 +13,136 @@
     <a href="https://github.com/hourinX/gdenticon/releases"><img src="https://img.shields.io/github/v/release/hourinX/gdenticon" alt="最新版本"></a>
     <a href="LICENSE"><img src="https://img.shields.io/github/license/hourinX/gdenticon" alt="许可证"></a>
   </p>
+
+  <p>
+    <img src="assets/gdenticon/2b7805f400b72cfd.png" alt="橄榄色 gdenticon 示例" width="128">
+    <img src="assets/gdenticon/2e2fbfd331aa7180.png" alt="紫色 gdenticon 示例" width="128">
+    <img src="assets/gdenticon/487cb9c9d779a8f0.png" alt="蓝色 gdenticon 示例" width="128">
+    <img src="assets/gdenticon/5b2ce05e8b83b346.png" alt="青色 gdenticon 示例" width="128">
+    <img src="assets/gdenticon/667a6c45fc751508.png" alt="绿色 gdenticon 示例" width="128">
+  </p>
+
+  <sub>不同输入会产生不同的确定性头像；相同输入与配置始终得到相同结果。</sub>
 </div>
 
-`gdenticon` 可以将用户名、电子邮箱、账户ID或任意字符串转换成稳定的网格头像。相同的标识与配置始终生成相同的图像，适用于默认用户头像、开发者工具、仪表盘和测试数据。
+## 为什么选择 gdenticon？
 
-项目同时提供 Go 软件包和命令行程序，支持镜像及平衡图案、根据哈希生成颜色或指定固定颜色、自定义网格与输出尺寸，以及 PNG、SVG、JPEG、GIF、BMP 和 TIFF 格式。
+- 从用户名、邮箱、账户 ID 或任意字符串生成稳定头像。
+- 生成平衡的镜像图案，并自动选择具有可读对比度的颜色。
+- 支持 **PNG、SVG、JPEG、GIF、BMP 和 TIFF**。
+- 在 Go 代码、自动化脚本或交互式 CLI 中复用同一套生成引擎。
+- 可写入文件、HTTP 响应、内存、对象存储或任意 `io.Writer`。
 
 ## 安装
 
-安装命令行程序：
+### 下载预编译程序
+
+无需安装 Go。前往
+[最新 GitHub Release](https://github.com/hourinX/gdenticon/releases/latest)
+下载适用于 Windows、macOS 或 Linux 的可执行程序，同时提供 AMD64 和 ARM64 版本。
+
+### 使用 Go 安装
+
+gdenticon 需要 Go 1.26 或更高版本。
 
 ```sh
 go install github.com/hourinX/gdenticon/v2/cmd/gdenticon@latest
 ```
 
-添加到 Go 模块：
+添加到现有 Go 模块：
 
 ```sh
 go get github.com/hourinX/gdenticon/v2@latest
 ```
 
-也可以从 [GitHub Releases](https://github.com/hourinX/gdenticon/releases) 下载预编译的可执行文件。
+## 快速开始
 
-gdenticon 需要 Go 1.26 或更高版本。使用 `gdenticon --help` 查看命令行选项；公开 Go API 请参阅 [pkg.go.dev](https://pkg.go.dev/github.com/hourinX/gdenticon/v2/pkg/gdenticon)。
-
-## 命令行
-
-在普通命令行模式下直接传入标识：
+只有标识符是必填参数：
 
 ```sh
-gdenticon alice@example.com --format png --size 512
+gdenticon alice@example.com
 ```
 
-不带参数运行 `gdenticon`，或者执行 `gdenticon shell`，即可进入交互命令模式。在交互模式中使用 `generate <id> [flags]` 生成头像，输入 `help` 查看命令，输入 `exit` 退出。
+其余参数全部选填：
 
-未指定输出目录时，程序会把生成的文件保存到操作系统临时目录下的 `gdenticon` 文件夹。Linux 通常为 `/tmp/gdenticon`，Windows 通常为 `%LOCALAPPDATA%\Temp\gdenticon`。
+| 参数 | 必填 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `<id>` | 是 | — | 用户名、邮箱、账户 ID 或任意字符串 |
+| `--grid` | 否 | `5` | 逻辑网格边长 |
+| `--size` | 否 | `256` | 输出图片的宽度和高度，单位为像素 |
+| `--mirror` | 否 | `true` | 将左半部分镜像到右侧 |
+| `--style` | 否 | `balanced` | `balanced` 或 `classic` 图案模式 |
+| `--hash` | 否 | `md5` | 摘要算法，例如 `sha256` |
+| `--format` | 否 | `png` | `png`、`svg`、`jpeg`、`gif`、`bmp` 或 `tiff` |
+| `--fg` | 否 | 根据哈希生成 | 前景色，格式为 `#rrggbb` 或 `#rrggbbaa` |
+| `--bg` | 否 | `#ffffff` | 背景色，格式为 `#rrggbb` 或 `#rrggbbaa` |
+| `--output` | 否 | 系统临时目录 | 输出基础目录 |
 
-## 吉祥物
+完整指定所有参数的命令：
 
-<p align="center">
-  <img src="assets/branding/gdenticon-icon.png" alt="正在绘制镜像网格头像的 gdenticon 设计师 Gopher" width="360">
-</p>
+```sh
+gdenticon first@example.com --grid 7 --size 512 --mirror=true --style balanced --hash sha256 --format png --fg "#2563eb" --bg "#f5f8ff" --output "avatars"
+```
 
-gdenticon 吉祥物是基于 Go Gopher 创作的衍生形象。原版 Go Gopher 由 [Renee French](https://reneefrench.blogspot.com/) 设计，并采用 [知识共享署名 4.0 国际许可协议](https://creativecommons.org/licenses/by/4.0/) 授权。本项目将其改编为正在绘制镜像 Identicon 网格的设计师形象。
+上述命令适用于已将 gdenticon 可执行文件所在目录加入 `PATH` 环境变量的情况。
+如果尚未配置 `PATH`，请在 Windows PowerShell 中将命令开头的 `gdenticon`
+替换为 `.\gdenticon.exe`，在 Linux 和 macOS 中替换为 `./gdenticon`。
+
+`--output` 支持绝对路径和相对路径。相对路径以执行命令时所在的当前目录为
+基准，因此 `--output "avatars"` 会将文件写入
+`<当前目录>/avatars/gdenticon`。省略 `--output` 时，gdenticon 使用操作系统
+临时目录。命令始终会输出最终生成文件的完整路径。
+
+### 交互模式
+
+不带参数运行 `gdenticon`，或者执行 `gdenticon shell`。交互模式中必须先输入
+`generate` 再输入标识符，其余参数仍然全部选填：
+
+```text
+gdenticon interactive mode
+Type "help" for commands and "exit" to quit.
+
+gdenticon> generate alice@example.com --format png --size 512
+
+Created:
+  C:\Users\...\Temp\gdenticon\e804324253b682bf.png
+```
+
+## Go 软件包
+
+生成与编码彼此分离，因此同一个逻辑头像可以通过任意 `io.Writer` 输出。
+
+```go
+package main
+
+import (
+    "bytes"
+
+    "github.com/hourinX/gdenticon/v2/pkg/gdenticon"
+)
+
+func main() {
+    icon, err := gdenticon.Generate("alice@example.com", gdenticon.GenerateOptions{
+        GridSize: 5,
+        Mirror:   true,
+        Format:   gdenticon.FormatPNG,
+    })
+    if err != nil {
+        panic(err)
+    }
+
+    var output bytes.Buffer
+    if err := gdenticon.Write(&output, icon, gdenticon.WriteOptions{Size: 256}); err != nil {
+        panic(err)
+    }
+}
+```
+
+完整 API 请参阅
+[pkg.go.dev](https://pkg.go.dev/github.com/hourinX/gdenticon/v2/pkg/gdenticon)；
+使用 `gdenticon --help` 查看所有命令行选项。
 
 ## 许可证
 
-源代码采用 [MIT License](LICENSE) 发布。
+源代码采用 [MIT License](LICENSE) 发布。品牌图素材的署名信息记录在
+[NOTICE](NOTICE) 中。
