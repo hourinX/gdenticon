@@ -63,6 +63,9 @@ go get github.com/hourinX/gdenticon/v2@latest
 gdenticon alice@example.com
 ```
 
+如需更丰富的图案细节，推荐从 `--grid 7` 开始；默认值 `5` 会生成单元格更大、
+视觉更简洁的头像。
+
 其余参数全部选填：
 
 | 参数 | 必填 | 默认值 | 说明 |

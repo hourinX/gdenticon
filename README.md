@@ -64,6 +64,9 @@ The identifier is the only required argument:
 gdenticon alice@example.com
 ```
 
+For a more detailed pattern, `--grid 7` is a recommended starting point. The
+default `5` produces a simpler avatar with larger cells.
+
 Every flag is optional:
 
 | Value | Required | Default | Description |

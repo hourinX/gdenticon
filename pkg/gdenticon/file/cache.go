@@ -75,10 +75,14 @@ func PutCacheEntry(dir, extension string, perm fs.FileMode, write WriteFunc) (Ca
 	return CacheEntry{Path: path, Created: true}, nil
 }
 
-// moveNew installs source at a path that must not already exist. Copying is a
-// fallback for restricted filesystems that deny renames of temporary files.
+// moveNew installs source without replacing an existing target. Copying is a
+// fallback for filesystems that do not support hard links.
 func moveNew(source, target string, perm fs.FileMode) error {
-	if err := os.Rename(source, target); err == nil {
+	if err := os.Link(source, target); err == nil {
+		if err := os.Remove(source); err != nil {
+			_ = os.Remove(target)
+			return err
+		}
 		return nil
 	}
 	in, err := os.Open(source)
@@ -90,6 +94,12 @@ func moveNew(source, target string, perm fs.FileMode) error {
 		_ = in.Close()
 		return err
 	}
+	keep := false
+	defer func() {
+		if !keep {
+			_ = os.Remove(target)
+		}
+	}()
 	if _, err := io.Copy(out, in); err != nil {
 		_ = in.Close()
 		_ = out.Close()
@@ -102,5 +112,9 @@ func moveNew(source, target string, perm fs.FileMode) error {
 	if err := out.Close(); err != nil {
 		return err
 	}
-	return os.Remove(source)
+	if err := os.Remove(source); err != nil {
+		return err
+	}
+	keep = true
+	return nil
 }

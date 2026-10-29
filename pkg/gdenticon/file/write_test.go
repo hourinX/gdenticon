@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 )
 
@@ -120,5 +121,48 @@ func TestMoveNewRejectsMissingSource(t *testing.T) {
 	dir := t.TempDir()
 	if err := moveNew(filepath.Join(dir, "missing"), filepath.Join(dir, "target"), 0o600); err == nil {
 		t.Fatal("moveNew returned nil for missing source")
+	}
+}
+
+func TestPutCacheEntryConcurrentCreation(t *testing.T) {
+	const writers = 8
+	dir := filepath.Join(t.TempDir(), "cache")
+	results := make(chan CacheEntry, writers)
+	errors := make(chan error, writers)
+
+	var wg sync.WaitGroup
+	for range writers {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			entry, err := PutCacheEntry(dir, ".png", 0o600, writeText("shared content"))
+			if err != nil {
+				errors <- err
+				return
+			}
+			results <- entry
+		}()
+	}
+	wg.Wait()
+	close(results)
+	close(errors)
+
+	for err := range errors {
+		t.Fatal(err)
+	}
+	created := 0
+	path := ""
+	for entry := range results {
+		if entry.Created {
+			created++
+		}
+		if path == "" {
+			path = entry.Path
+		} else if entry.Path != path {
+			t.Fatalf("cache paths differ: %q != %q", entry.Path, path)
+		}
+	}
+	if created != 1 {
+		t.Fatalf("created entries = %d, want 1", created)
 	}
 }
