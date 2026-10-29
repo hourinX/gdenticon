@@ -33,6 +33,10 @@
 - Use the same engine from Go code, scripts, or the interactive CLI.
 - Write to files, HTTP responses, memory, object storage, or any `io.Writer`.
 
+## Architecture
+
+![gdenticon algorithm and architecture pipeline](assets/docs/gdenticon-architecture.svg)
+
 ## Installation
 
 ### Download a prebuilt binary

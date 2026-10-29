@@ -33,6 +33,10 @@
 - 在 Go 代码、自动化脚本或交互式 CLI 中复用同一套生成引擎。
 - 可写入文件、HTTP 响应、内存、对象存储或任意 `io.Writer`。
 
+## 架构
+
+![gdenticon 算法与架构流水线](assets/docs/gdenticon-architecture.svg)
+
 ## 安装
 
 ### 下载预编译程序
