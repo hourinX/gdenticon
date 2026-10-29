@@ -104,3 +104,33 @@ func TestPutCacheEntryReportsCreation(t *testing.T) {
 		t.Fatalf("cache paths differ: %q != %q", first.Path, second.Path)
 	}
 }
+
+func TestPutCacheEntryRejectsInvalidDirectory(t *testing.T) {
+	root := t.TempDir()
+	file := filepath.Join(root, "not-a-directory")
+	if err := os.WriteFile(file, []byte("content"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := PutCacheEntry(filepath.Join(file, "cache"), ".png", 0o600, writeText("content")); err == nil {
+		t.Fatal("PutCacheEntry returned nil for invalid directory")
+	}
+}
+
+func TestMoveNewFailures(t *testing.T) {
+	dir := t.TempDir()
+	if err := moveNew(filepath.Join(dir, "missing"), filepath.Join(dir, "target"), 0o600); err == nil {
+		t.Fatal("moveNew returned nil for missing source")
+	}
+
+	source := filepath.Join(dir, "source")
+	target := filepath.Join(dir, "existing")
+	if err := os.WriteFile(source, []byte("source"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(target, []byte("target"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := moveNew(source, target, 0o600); err == nil {
+		t.Fatal("moveNew replaced an existing target")
+	}
+}
