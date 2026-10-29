@@ -44,7 +44,7 @@ AMD64 and ARM64 builds are available.
 
 ### Install with Go
 
-gdenticon requires Go 1.26 or later.
+gdenticon requires Go 1.24 or later.
 
 ```sh
 go install github.com/hourinX/gdenticon/v2/cmd/gdenticon@latest
@@ -110,6 +110,13 @@ gdenticon> generate alice@example.com --format png --size 512
 Created:
   C:\Users\...\Temp\gdenticon\e804324253b682bf.png
 ```
+
+Interactive sessions also track their outputs:
+
+- `outputs` lists files generated or resolved during the current session.
+- `remove <number|filename|last>` removes one recorded output.
+- `clean` confirms, then removes files newly created in the current session
+  across every output directory. Historical and unrelated files are preserved.
 
 ## Go library
 

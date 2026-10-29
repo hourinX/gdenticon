@@ -25,6 +25,7 @@ func runInteractive(stdin io.Reader, stdout, stderr io.Writer) int {
 	fmt.Fprintln(stdout)
 
 	scanner := bufio.NewScanner(stdin)
+	session := &interactiveSession{}
 	for {
 		fmt.Fprint(stdout, "gdenticon> ")
 		if !scanner.Scan() {
@@ -48,6 +49,57 @@ func runInteractive(stdin io.Reader, stdout, stderr io.Writer) int {
 			printInteractiveHelp(stdout)
 			fmt.Fprintln(stdout)
 			continue
+		case "outputs":
+			if len(args) != 1 {
+				printInteractiveError(stderr, `outputs does not accept arguments`)
+				continue
+			}
+			session.printOutputs(stdout)
+			continue
+		case "remove":
+			if len(args) != 2 {
+				printInteractiveError(stderr, `remove requires an output number, filename, or "last"`)
+				continue
+			}
+			output, err := session.remove(args[1])
+			if err != nil {
+				printInteractiveError(stderr, err.Error())
+				continue
+			}
+			fmt.Fprintf(stdout, "Removed:\n  %s\n\n", output.Path)
+			continue
+		case "clean":
+			if len(args) != 1 {
+				printInteractiveError(stderr, `clean does not accept arguments`)
+				continue
+			}
+			count := session.removableCount()
+			if count == 0 {
+				fmt.Fprintln(stdout, "No files created in this session are available to clean.")
+				fmt.Fprintln(stdout)
+				continue
+			}
+			fmt.Fprintf(stdout, "Remove %d files created in this session? [y/N] ", count)
+			if !scanner.Scan() {
+				if err := scanner.Err(); err != nil {
+					fmt.Fprintln(stderr, "gdenticon: read confirmation:", err)
+					return 1
+				}
+				return 0
+			}
+			answer := strings.ToLower(strings.TrimSpace(scanner.Text()))
+			if answer != "y" && answer != "yes" {
+				fmt.Fprintln(stdout, "Cancelled.")
+				fmt.Fprintln(stdout)
+				continue
+			}
+			removed, err := session.clean()
+			if err != nil {
+				printInteractiveError(stderr, err.Error())
+				continue
+			}
+			fmt.Fprintf(stdout, "Removed %d files.\n\n", removed)
+			continue
 		case "version":
 			args = []string{"--version"}
 		case "generate":
@@ -60,8 +112,12 @@ func runInteractive(stdin io.Reader, stdout, stderr io.Writer) int {
 		}
 
 		var commandOut, commandErr bytes.Buffer
-		code := run(args, &commandOut, &commandErr)
-		printInteractiveResult(stdout, stderr, args, code, commandOut.String(), commandErr.String())
+		var generated *renderResult
+		code := runWithGenerated(args, &commandOut, &commandErr, func(result renderResult) {
+			session.add(result)
+			generated = &result
+		})
+		printInteractiveResult(stdout, stderr, args, code, commandOut.String(), commandErr.String(), generated)
 	}
 	if err := scanner.Err(); err != nil {
 		fmt.Fprintln(stderr, "gdenticon: read command:", err)
@@ -70,7 +126,7 @@ func runInteractive(stdin io.Reader, stdout, stderr io.Writer) int {
 	return 0
 }
 
-func printInteractiveResult(stdout, stderr io.Writer, args []string, code int, output, failure string) {
+func printInteractiveResult(stdout, stderr io.Writer, args []string, code int, output, failure string, generated *renderResult) {
 	if code != 0 {
 		message, _, _ := strings.Cut(strings.TrimSpace(failure), "\n")
 		message = strings.TrimPrefix(message, "gdenticon: ")
@@ -85,8 +141,18 @@ func printInteractiveResult(stdout, stderr io.Writer, args []string, code int, o
 		fmt.Fprintln(stdout)
 		return
 	}
-	fmt.Fprintln(stdout, "Created:")
+	label := "Created:"
+	if generated != nil && !generated.Created {
+		label = "Cached:"
+	}
+	fmt.Fprintln(stdout, label)
 	fmt.Fprintf(stdout, "  %s\n\n", strings.TrimSpace(output))
+}
+
+func printInteractiveError(w io.Writer, message string) {
+	fmt.Fprintln(w, "Error:", message)
+	fmt.Fprintln(w, `Type "help" for available commands.`)
+	fmt.Fprintln(w)
 }
 
 func hasHelpFlag(args []string) bool {
@@ -101,6 +167,9 @@ func hasHelpFlag(args []string) bool {
 func printInteractiveHelp(w io.Writer) {
 	fmt.Fprintln(w, "Commands:")
 	fmt.Fprintln(w, "  generate <id> [flags]  generate an identicon")
+	fmt.Fprintln(w, "  outputs                list outputs from this session")
+	fmt.Fprintln(w, "  remove <target>        remove by number, filename, or last")
+	fmt.Fprintln(w, "  clean                  remove files created in this session")
 	fmt.Fprintln(w, "  version                print the version")
 	fmt.Fprintln(w, "  help                   show this help")
 	fmt.Fprintln(w, "  exit, quit             leave interactive mode")

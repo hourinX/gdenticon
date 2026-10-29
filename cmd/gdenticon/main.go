@@ -18,7 +18,7 @@ func main() {
 }
 
 func run(args []string, stdout, stderr io.Writer) int {
-	return execute(createCommandTree(), args, stdout, stderr)
+	return runWithGenerated(args, stdout, stderr, nil)
 }
 
 func runProgram(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
@@ -28,7 +28,11 @@ func runProgram(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	return run(args, stdout, stderr)
 }
 
-func createCommandTree() *cobra.Command {
+func runWithGenerated(args []string, stdout, stderr io.Writer, generated func(renderResult)) int {
+	return execute(createCommandTree(generated), args, stdout, stderr)
+}
+
+func createCommandTree(generated func(renderResult)) *cobra.Command {
 	f := &renderFlags{}
 
 	cmd := &cobra.Command{
@@ -40,7 +44,15 @@ func createCommandTree() *cobra.Command {
 		SilenceErrors:     true,
 		CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return execRender(cmd, args[0], f)
+			result, err := execRender(args[0], f)
+			if err != nil {
+				return err
+			}
+			if generated != nil {
+				generated(result)
+			}
+			fmt.Fprintln(cmd.OutOrStdout(), result.Path)
+			return nil
 		},
 	}
 	cmd.SetVersionTemplate("gdenticon {{.Version}}\n")

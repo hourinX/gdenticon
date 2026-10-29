@@ -83,3 +83,24 @@ func TestPutCache(t *testing.T) {
 		t.Fatal("PutCache returned nil for write failure")
 	}
 }
+
+func TestPutCacheEntryReportsCreation(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "cache")
+	first, err := PutCacheEntry(dir, ".png", 0o600, writeText("tracked content"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !first.Created {
+		t.Fatal("first cache write was not reported as created")
+	}
+	second, err := PutCacheEntry(dir, ".png", 0o600, writeText("tracked content"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if second.Created {
+		t.Fatal("existing cache entry was reported as created")
+	}
+	if first.Path != second.Path {
+		t.Fatalf("cache paths differ: %q != %q", first.Path, second.Path)
+	}
+}

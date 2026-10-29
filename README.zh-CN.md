@@ -43,7 +43,7 @@
 
 ### 使用 Go 安装
 
-gdenticon 需要 Go 1.26 或更高版本。
+gdenticon 需要 Go 1.24 或更高版本。
 
 ```sh
 go install github.com/hourinX/gdenticon/v2/cmd/gdenticon@latest
@@ -107,6 +107,13 @@ gdenticon> generate alice@example.com --format png --size 512
 Created:
   C:\Users\...\Temp\gdenticon\e804324253b682bf.png
 ```
+
+交互会话还会记录本次输出：
+
+- `outputs`：列出当前会话生成或命中的文件。
+- `remove <编号|文件名|last>`：删除一条已记录的输出。
+- `clean`：确认后，跨所有输出目录删除当前会话中新建的文件；历史文件和无关
+  文件不会被删除。
 
 ## Go 软件包
 

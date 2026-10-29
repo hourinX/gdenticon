@@ -12,16 +12,29 @@ import (
 	"path/filepath"
 )
 
+// CacheEntry describes the result of a content-addressed cache write.
+type CacheEntry struct {
+	Path    string
+	Created bool
+}
+
 // PutCache writes content to a content-addressed file in dir. Equal encoded
 // content and extension resolve to the same path.
 func PutCache(dir, extension string, perm fs.FileMode, write WriteFunc) (string, error) {
+	entry, err := PutCacheEntry(dir, extension, perm, write)
+	return entry.Path, err
+}
+
+// PutCacheEntry writes content like PutCache and reports whether this call
+// created the returned file instead of resolving an existing cache entry.
+func PutCacheEntry(dir, extension string, perm fs.FileMode, write WriteFunc) (CacheEntry, error) {
 	if err := EnsureDir(dir, 0o755); err != nil {
-		return "", err
+		return CacheEntry{}, err
 	}
 
 	f, err := os.CreateTemp(dir, ".gdenticon-cache-*")
 	if err != nil {
-		return "", err
+		return CacheEntry{}, err
 	}
 	temp := f.Name()
 	keep := false
@@ -34,32 +47,32 @@ func PutCache(dir, extension string, perm fs.FileMode, write WriteFunc) (string,
 	hash := sha256.New()
 	if err := write(io.MultiWriter(f, hash)); err != nil {
 		_ = f.Close()
-		return "", err
+		return CacheEntry{}, err
 	}
 	if err := f.Chmod(perm); err != nil {
 		_ = f.Close()
-		return "", err
+		return CacheEntry{}, err
 	}
 	if err := f.Close(); err != nil {
-		return "", err
+		return CacheEntry{}, err
 	}
 
 	name := hex.EncodeToString(hash.Sum(nil))[:16]
 	path := filepath.Join(dir, name+extension)
 	if _, err := os.Stat(path); err == nil {
-		return path, nil
+		return CacheEntry{Path: path}, nil
 	} else if !os.IsNotExist(err) {
-		return "", err
+		return CacheEntry{}, err
 	}
 	if err := moveNew(temp, path, perm); err != nil {
 		// A concurrent writer may have won after the Stat above.
 		if _, statErr := os.Stat(path); statErr == nil {
-			return path, nil
+			return CacheEntry{Path: path}, nil
 		}
-		return "", err
+		return CacheEntry{}, err
 	}
 	keep = true
-	return path, nil
+	return CacheEntry{Path: path, Created: true}, nil
 }
 
 // moveNew installs source at a path that must not already exist. Copying is a

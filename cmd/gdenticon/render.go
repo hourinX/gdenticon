@@ -55,34 +55,40 @@ func styleName(style gdenticon.PatternStyle) string {
 	return ""
 }
 
-// execRender generates the identicon for id, saves it, and prints the path.
-func execRender(cmd *cobra.Command, id string, f *renderFlags) error {
+type renderResult struct {
+	ID      string
+	Path    string
+	Created bool
+}
+
+// execRender generates the identicon for id and saves it.
+func execRender(id string, f *renderFlags) (renderResult, error) {
 	if f.grid < 1 {
-		return usageError{fmt.Errorf("-grid must be positive, got %d", f.grid)}
+		return renderResult{}, usageError{fmt.Errorf("-grid must be positive, got %d", f.grid)}
 	}
 	if f.size < 1 {
-		return usageError{fmt.Errorf("-size must be positive, got %d", f.size)}
+		return renderResult{}, usageError{fmt.Errorf("-size must be positive, got %d", f.size)}
 	}
 
 	digest, ok := gdenticon.Digest(f.hash)
 	if !ok {
-		return usageError{fmt.Errorf("unknown -hash %q", f.hash)}
+		return renderResult{}, usageError{fmt.Errorf("unknown -hash %q", f.hash)}
 	}
 
 	style, ok := styleNames[f.style]
 	if !ok {
-		return usageError{fmt.Errorf("unknown -style %q", f.style)}
+		return renderResult{}, usageError{fmt.Errorf("unknown -style %q", f.style)}
 	}
 	format := gdenticon.Format(f.format)
 	if format != gdenticon.FormatPNG && format != gdenticon.FormatSVG &&
 		format != gdenticon.FormatJPEG && format != gdenticon.FormatGIF &&
 		format != gdenticon.FormatBMP && format != gdenticon.FormatTIFF {
-		return usageError{fmt.Errorf("unknown -format %q", f.format)}
+		return renderResult{}, usageError{fmt.Errorf("unknown -format %q", f.format)}
 	}
 
 	background, err := gdenticon.ParseColor(f.bg)
 	if err != nil {
-		return usageError{fmt.Errorf("-bg: %w", err)}
+		return renderResult{}, usageError{fmt.Errorf("-bg: %w", err)}
 	}
 
 	opts := gdenticon.GenerateOptions{
@@ -97,14 +103,14 @@ func execRender(cmd *cobra.Command, id string, f *renderFlags) error {
 	if f.fg != "" {
 		c, err := gdenticon.ParseColor(f.fg)
 		if err != nil {
-			return usageError{fmt.Errorf("-fg: %w", err)}
+			return renderResult{}, usageError{fmt.Errorf("-fg: %w", err)}
 		}
 		opts.Foreground = gdenticon.FixedColor(c)
 	}
 
 	icon, err := gdenticon.Generate(id, opts)
 	if err != nil {
-		return err
+		return renderResult{}, err
 	}
 
 	base := f.output
@@ -112,13 +118,11 @@ func execRender(cmd *cobra.Command, id string, f *renderFlags) error {
 		base = os.TempDir()
 	}
 	dir := filepath.Join(base, asset.FolderName)
-	path, err := iconfile.PutCache(dir, icon.Format.Extension(), 0o644, func(w io.Writer) error {
+	entry, err := iconfile.PutCacheEntry(dir, icon.Format.Extension(), 0o644, func(w io.Writer) error {
 		return gdenticon.Write(w, icon, gdenticon.WriteOptions{Size: f.size})
 	})
 	if err != nil {
-		return err
+		return renderResult{}, err
 	}
-
-	fmt.Fprintln(cmd.OutOrStdout(), path)
-	return nil
+	return renderResult{ID: id, Path: entry.Path, Created: entry.Created}, nil
 }
