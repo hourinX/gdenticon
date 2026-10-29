@@ -96,6 +96,49 @@ func TestSessionRejectsAmbiguousFilename(t *testing.T) {
 	}
 }
 
+func TestSessionOutputAndResolutionErrors(t *testing.T) {
+	session := &interactiveSession{}
+	var output bytes.Buffer
+	if err := session.printOutputs(&output); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(output.String(), "No outputs") {
+		t.Fatalf("empty output listing = %q", output.String())
+	}
+
+	session.add(renderResult{ID: "one", Path: filepath.Join("one", "one.png"), Created: false})
+	session.add(renderResult{ID: "one", Path: filepath.Join("one", "one.png"), Created: true})
+	output.Reset()
+	if err := session.printOutputs(&output); err != nil {
+		t.Fatal(err)
+	}
+	if len(session.outputs) != 1 || !session.outputs[0].Created || !strings.Contains(output.String(), "created") {
+		t.Fatalf("merged session outputs = %#v, listing = %q", session.outputs, output.String())
+	}
+
+	for _, selector := range []string{"0", "2", "missing.png"} {
+		if _, err := session.resolve(selector); err == nil {
+			t.Errorf("resolve(%q) returned nil error", selector)
+		}
+	}
+}
+
+func TestSessionCleanReportsRemovalFailures(t *testing.T) {
+	root := t.TempDir()
+	nonEmptyDir := filepath.Join(root, "not-a-file")
+	if err := os.MkdirAll(nonEmptyDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(nonEmptyDir, "keep"), []byte("keep"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	session := &interactiveSession{outputs: []outputRecord{{Path: nonEmptyDir, Created: true}}}
+	removed, err := session.clean()
+	if err == nil || removed != 0 {
+		t.Fatalf("clean() = (%d, %v), want removal failure", removed, err)
+	}
+}
+
 func TestInteractiveCleanConfirmation(t *testing.T) {
 	dir := t.TempDir()
 	input := strings.Join([]string{
